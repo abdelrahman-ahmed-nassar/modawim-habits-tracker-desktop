@@ -40,12 +40,12 @@ export class AnalyticsCache {
 
   private async isCacheEnabled(): Promise<boolean> {
     const settings = await this.getSettings();
-    return settings.analytics.cacheEnabled;
+    return settings?.analytics?.cacheEnabled ?? true;
   }
 
   private async getCacheDuration(): Promise<number> {
     const settings = await this.getSettings();
-    return settings.analytics.cacheDuration * 60 * 1000; // Convert minutes to milliseconds
+    return (settings?.analytics?.cacheDuration ?? 5) * 60 * 1000; // Convert minutes to milliseconds
   }
 
   private isExpired(timestamp: number, duration: number): boolean {

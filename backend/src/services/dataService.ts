@@ -38,6 +38,21 @@ const DEFAULT_SETTINGS: Settings = {
   lastBackupDate: new Date().toISOString(),
 };
 
+const normalizeSettings = (settings?: Partial<Settings> | null): Settings => {
+  return {
+    ...DEFAULT_SETTINGS,
+    ...(settings ?? {}),
+    notifications: {
+      ...DEFAULT_SETTINGS.notifications,
+      ...(settings?.notifications ?? {}),
+    },
+    analytics: {
+      ...DEFAULT_SETTINGS.analytics,
+      ...(settings?.analytics ?? {}),
+    },
+  };
+};
+
 /**
  * Initialize the data files if they don't exist
  */
@@ -108,7 +123,7 @@ export const createHabit = async (
     | "bestStreak"
     | "currentCounter"
     | "isActive"
-  >
+  >,
 ): Promise<Habit> => {
   const habits = await getHabits();
 
@@ -136,7 +151,7 @@ export const createHabit = async (
  */
 export const updateHabit = async (
   id: string,
-  habitData: Partial<Habit>
+  habitData: Partial<Habit>,
 ): Promise<Habit | null> => {
   const habits = await getHabits();
   const index = habits.findIndex((h) => h.id === id);
@@ -192,7 +207,7 @@ export const getCompletions = async (): Promise<CompletionRecord[]> => {
  * @returns Array of completion records for the habit
  */
 export const getCompletionsByHabitId = async (
-  habitId: string
+  habitId: string,
 ): Promise<CompletionRecord[]> => {
   const completions = await getCompletions();
   return completions.filter((c) => c.habitId === habitId);
@@ -204,7 +219,7 @@ export const getCompletionsByHabitId = async (
  * @returns Array of completion records for the date
  */
 export const getCompletionsByDate = async (
-  date: string
+  date: string,
 ): Promise<CompletionRecord[]> => {
   const completions = await getCompletions();
   return completions.filter((c) => c.date === date);
@@ -216,14 +231,14 @@ export const getCompletionsByDate = async (
  * @returns The created completion record
  */
 export const createCompletion = async (
-  completionData: Omit<CompletionRecord, "id" | "completedAt">
+  completionData: Omit<CompletionRecord, "id" | "completedAt">,
 ): Promise<CompletionRecord> => {
   const completions = await getCompletions();
 
   // Check if a record already exists for this habit and date
   const existingIndex = completions.findIndex(
     (c) =>
-      c.habitId === completionData.habitId && c.date === completionData.date
+      c.habitId === completionData.habitId && c.date === completionData.date,
   );
 
   const newCompletion: CompletionRecord = {
@@ -255,7 +270,7 @@ export const createCompletion = async (
  * @returns Array of created completion records
  */
 export const createCompletionsBatch = async (
-  completionsData: Array<Omit<CompletionRecord, "id" | "completedAt">>
+  completionsData: Array<Omit<CompletionRecord, "id" | "completedAt">>,
 ): Promise<CompletionRecord[]> => {
   const completions = await getCompletions();
   const newCompletions: CompletionRecord[] = [];
@@ -266,7 +281,7 @@ export const createCompletionsBatch = async (
     // Check if a record already exists for this habit and date
     const existingIndex = completions.findIndex(
       (c) =>
-        c.habitId === completionData.habitId && c.date === completionData.date
+        c.habitId === completionData.habitId && c.date === completionData.date,
     );
 
     const newCompletion: CompletionRecord = {
@@ -323,7 +338,7 @@ export const deleteCompletion = async (id: string): Promise<boolean> => {
  * @returns Whether the update was successful
  */
 export const updateCompletion = async (
-  completion: CompletionRecord
+  completion: CompletionRecord,
 ): Promise<boolean> => {
   const completions = await getCompletions();
   const index = completions.findIndex((c) => c.id === completion.id);
@@ -362,7 +377,7 @@ export const updateHabitStreaks = async (habitId: string): Promise<void> => {
     // For counter-type habits, currentCounter is the sum of all completion values
     currentCounter = completions.reduce(
       (sum, completion) => sum + (completion.value || 0),
-      0
+      0,
     );
 
     // Calculate current streak (consecutive days where value >= goalValue)
@@ -382,14 +397,14 @@ export const updateHabitStreaks = async (habitId: string): Promise<void> => {
     currentStreak = calculateCurrentStreak(
       dailyCompletions,
       habit.repetition,
-      habit.specificDays
+      habit.specificDays,
     );
 
     // Calculate best streak
     const allStreaks = calculateAllStreaks(
       dailyCompletions,
       habit.repetition,
-      habit.specificDays
+      habit.specificDays,
     );
     bestStreak = Math.max(...allStreaks, 0, habit.bestStreak); // Include existing bestStreak
   }
@@ -406,7 +421,7 @@ export const updateHabitStreaks = async (habitId: string): Promise<void> => {
  */
 const getDailyCompletionStatus = (
   habit: Habit,
-  completions: CompletionRecord[]
+  completions: CompletionRecord[],
 ): Map<string, boolean> => {
   const statusMap = new Map<string, boolean>();
 
@@ -418,7 +433,7 @@ const getDailyCompletionStatus = (
         completion.completed &&
           (completion.value !== undefined
             ? completion.value >= habit.goalValue
-            : false)
+            : false),
       );
     } else {
       statusMap.set(completion.date, completion.completed);
@@ -438,11 +453,11 @@ const getDailyCompletionStatus = (
 const calculateCurrentStreak = (
   dailyCompletions: Map<string, boolean>,
   repetition: "daily" | "weekly" | "monthly",
-  specificDays?: number[]
+  specificDays?: number[],
 ): number => {
   // Convert map to array of [date, completed] pairs and sort by date (most recent first)
   const sortedCompletions = Array.from(dailyCompletions.entries()).sort(
-    (a, b) => b[0].localeCompare(a[0])
+    (a, b) => b[0].localeCompare(a[0]),
   );
 
   if (sortedCompletions.length === 0) return 0;
@@ -459,7 +474,7 @@ const calculateCurrentStreak = (
     if (i > 0) {
       const prevDate = new Date(sortedCompletions[i - 1][0]);
       const dayDiff = Math.floor(
-        (prevDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+        (prevDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       // For non-daily habits, need to handle differently
@@ -489,11 +504,11 @@ const calculateCurrentStreak = (
 const calculateAllStreaks = (
   dailyCompletions: Map<string, boolean>,
   repetition: "daily" | "weekly" | "monthly",
-  specificDays?: number[]
+  specificDays?: number[],
 ): number[] => {
   // Convert map to array of [date, completed] pairs and sort by date (oldest first)
   const sortedCompletions = Array.from(dailyCompletions.entries()).sort(
-    (a, b) => a[0].localeCompare(b[0])
+    (a, b) => a[0].localeCompare(b[0]),
   );
 
   const streaks: number[] = [];
@@ -516,7 +531,7 @@ const calculateAllStreaks = (
       const currentDate = new Date(dateStr);
       const nextDate = new Date(sortedCompletions[i + 1][0]);
       const dayDiff = Math.floor(
-        (nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24)
+        (nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       // For non-daily habits, need to handle differently
@@ -549,11 +564,11 @@ const calculateAllStreaks = (
  */
 const calculateCounterStreak = (
   completions: CompletionRecord[],
-  goalValue: number
+  goalValue: number,
 ): number => {
   // Sort by date (most recent first)
   const sortedCompletions = [...completions].sort((a, b) =>
-    b.date.localeCompare(a.date)
+    b.date.localeCompare(a.date),
   );
 
   if (sortedCompletions.length === 0) return 0;
@@ -569,7 +584,7 @@ const calculateCounterStreak = (
       const currentDate = new Date(completion.date);
       const prevDate = new Date(sortedCompletions[i - 1].date);
       const dayDiff = Math.floor(
-        (prevDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24)
+        (prevDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       if (dayDiff > 1) break;
@@ -604,7 +619,7 @@ export const getNotes = async (): Promise<DailyNote[]> => {
  * @returns The note if found, null otherwise
  */
 export const getNoteByDate = async (
-  date: string
+  date: string,
 ): Promise<DailyNote | null> => {
   const notes = await getNotes();
   const note = notes.find((n) => n.date === date);
@@ -617,7 +632,7 @@ export const getNoteByDate = async (
  * @returns The created or updated note
  */
 export const saveNote = async (
-  noteData: Omit<DailyNote, "id" | "createdAt" | "updatedAt">
+  noteData: Omit<DailyNote, "id" | "createdAt" | "updatedAt">,
 ): Promise<DailyNote> => {
   const notes = await getNotes();
   const now = new Date().toISOString();
@@ -658,7 +673,7 @@ export const saveNote = async (
  */
 export const updateNote = async (
   id: string,
-  noteData: Partial<Omit<DailyNote, "id" | "createdAt" | "updatedAt">>
+  noteData: Partial<Omit<DailyNote, "id" | "createdAt" | "updatedAt">>,
 ): Promise<DailyNote | null> => {
   const notes = await getNotes();
   const index = notes.findIndex((n) => n.id === id);
@@ -704,7 +719,15 @@ export const deleteNote = async (id: string): Promise<boolean> => {
  * @returns The app settings
  */
 export const getSettings = async (): Promise<Settings> => {
-  return await readData<Settings>(SETTINGS_FILE);
+  const settings = await readData<Partial<Settings>>(SETTINGS_FILE);
+  const normalizedSettings = normalizeSettings(settings);
+
+  // Self-heal older/incomplete settings files so subsequent reads are safe.
+  if (JSON.stringify(settings) !== JSON.stringify(normalizedSettings)) {
+    await writeData(SETTINGS_FILE, normalizedSettings);
+  }
+
+  return normalizedSettings;
 };
 
 /**
@@ -713,14 +736,22 @@ export const getSettings = async (): Promise<Settings> => {
  * @returns The updated settings
  */
 export const updateSettings = async (
-  settingsData: Partial<Settings>
+  settingsData: Partial<Settings>,
 ): Promise<Settings> => {
   const settings = await getSettings();
 
-  const updatedSettings: Settings = {
+  const updatedSettings: Settings = normalizeSettings({
     ...settings,
     ...settingsData,
-  };
+    notifications: {
+      ...settings.notifications,
+      ...(settingsData.notifications ?? {}),
+    },
+    analytics: {
+      ...settings.analytics,
+      ...(settingsData.analytics ?? {}),
+    },
+  });
 
   await writeData(SETTINGS_FILE, updatedSettings);
   return updatedSettings;
@@ -757,7 +788,7 @@ export const createBackup = async (): Promise<BackupData> => {
  * @param backupData The backup data to restore
  */
 export const restoreFromBackup = async (
-  backupData: BackupData
+  backupData: BackupData,
 ): Promise<void> => {
   await writeData(HABITS_FILE, backupData.habits);
   await writeData(COMPLETIONS_FILE, backupData.completions);
@@ -771,7 +802,7 @@ export const restoreFromBackup = async (
  * @returns Analytics for the habit
  */
 export const calculateHabitAnalytics = async (
-  habitId: string
+  habitId: string,
 ): Promise<HabitAnalytics | null> => {
   const habit = await getHabitById(habitId);
   if (!habit) return null;
@@ -796,7 +827,7 @@ export const calculateHabitAnalytics = async (
 
   // Sort completions by date
   const sortedCompletions = [...completions].sort((a, b) =>
-    a.date.localeCompare(b.date)
+    a.date.localeCompare(b.date),
   );
 
   // Total completions
@@ -833,14 +864,14 @@ export const calculateHabitAnalytics = async (
       current.successRate > dayOfWeekRates[best].successRate
         ? current.dayOfWeek
         : best,
-    0
+    0,
   );
   const worstDayOfWeek = dayOfWeekRates.reduce(
     (worst, current) =>
       current.successRate < dayOfWeekRates[worst].successRate
         ? current.dayOfWeek
         : worst,
-    0
+    0,
   );
 
   // Prepare completion history
@@ -872,7 +903,7 @@ export const calculateHabitAnalytics = async (
  * @param completions New set of completion records
  */
 export const replaceAllCompletions = async (
-  completions: CompletionRecord[]
+  completions: CompletionRecord[],
 ): Promise<void> => {
   await writeData(COMPLETIONS_FILE, completions);
 };
@@ -891,7 +922,7 @@ export const getTemplates = async (): Promise<NoteTemplate[]> => {
  * @returns The template if found, null otherwise
  */
 export const getTemplateById = async (
-  id: string
+  id: string,
 ): Promise<NoteTemplate | null> => {
   const templates = await getTemplates();
   const template = templates.find((t) => t.id === id);
@@ -904,7 +935,7 @@ export const getTemplateById = async (
  * @returns The created template
  */
 export const createTemplate = async (
-  templateData: Omit<NoteTemplate, "id" | "createdAt" | "updatedAt">
+  templateData: Omit<NoteTemplate, "id" | "createdAt" | "updatedAt">,
 ): Promise<NoteTemplate> => {
   const templates = await getTemplates();
   const now = new Date().toISOString();
@@ -929,7 +960,7 @@ export const createTemplate = async (
  */
 export const updateTemplate = async (
   id: string,
-  templateData: Partial<Omit<NoteTemplate, "id" | "createdAt" | "updatedAt">>
+  templateData: Partial<Omit<NoteTemplate, "id" | "createdAt" | "updatedAt">>,
 ): Promise<NoteTemplate | null> => {
   const templates = await getTemplates();
   const index = templates.findIndex((t) => t.id === id);
@@ -990,7 +1021,7 @@ export const getAll = async <T>(dataFile: string): Promise<T[]> => {
  */
 export const getById = async <T extends { id: string }>(
   dataFile: string,
-  id: string
+  id: string,
 ): Promise<T | null> => {
   const items = await getAll<T>(dataFile);
   const item = items.find((item) => item.id === id);
@@ -1004,7 +1035,7 @@ export const getById = async <T extends { id: string }>(
  */
 export const add = async <T extends { id: string }>(
   dataFile: string,
-  item: T
+  item: T,
 ): Promise<T> => {
   const fileName = `${dataFile}.json`;
   const items = await getAll<T>(dataFile);
@@ -1023,7 +1054,7 @@ export const add = async <T extends { id: string }>(
 export const update = async <T extends { id: string }>(
   dataFile: string,
   id: string,
-  updatedItem: T
+  updatedItem: T,
 ): Promise<T | null> => {
   const fileName = `${dataFile}.json`;
   const items = await getAll<T>(dataFile);
@@ -1046,7 +1077,7 @@ export const update = async <T extends { id: string }>(
  */
 export const remove = async <T extends { id: string }>(
   dataFile: string,
-  id: string
+  id: string,
 ): Promise<boolean> => {
   const fileName = `${dataFile}.json`;
   const items = await getAll<T>(dataFile);

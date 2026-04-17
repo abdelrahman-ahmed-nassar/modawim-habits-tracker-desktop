@@ -52,6 +52,7 @@
     "autoprefixer": "^10.4.17",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
+    "electron": "^36.3.1",
     "electron-builder": "^26.0.12",
     "electron-is-dev": "^3.0.1",
     "electron-updater": "^6.6.2",
